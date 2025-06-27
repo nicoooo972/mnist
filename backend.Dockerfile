@@ -23,12 +23,9 @@ RUN pip install --no-cache-dir -r requirements.txt
 # Copier le code source
 COPY src/ ./src/
 
-# Créer le dossier models 
+# Créer le dossier models et copier les modèles
 RUN mkdir -p ./models
-
-# Copier les modèles s'ils existent, sinon créer un fichier vide
-COPY models/ ./models/ 2>/dev/null || true
-RUN touch ./models/.gitkeep 2>/dev/null || true
+COPY models ./models
 
 # Définir le PYTHONPATH pour que les imports fonctionnent
 ENV PYTHONPATH=/app/src
