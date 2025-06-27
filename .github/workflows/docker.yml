@@ -9,8 +9,6 @@ on:
 
 env:
   REGISTRY: ghcr.io
-  IMAGE_FRONTEND: ${{ github.repository }}/mnist-frontend
-  IMAGE_BACKEND: ${{ github.repository }}/mnist-backend
 
 jobs:
   build-and-push:
@@ -21,7 +19,13 @@ jobs:
 
     strategy:
       matrix:
-        service: [frontend, backend]
+        include:
+          - service: frontend
+            dockerfile: frontend.Dockerfile
+            image: ghcr.io/${{ github.repository }}/mnist-frontend
+          - service: backend
+            dockerfile: backend.Dockerfile
+            image: ghcr.io/${{ github.repository }}/mnist-backend
 
     steps:
       - name: 📥 Checkout repository
@@ -38,7 +42,7 @@ jobs:
         id: meta
         uses: docker/metadata-action@v5
         with:
-          images: ${{ env.REGISTRY }}/${{ env[format('IMAGE_{0}', matrix.service)] }}
+          images: ${{ matrix.image }}
           tags: |
             type=ref,event=branch
             type=ref,event=pr
@@ -54,7 +58,7 @@ jobs:
         uses: docker/build-push-action@v5
         with:
           context: .
-          file: ${{ matrix.service }}.Dockerfile
+          file: ${{ matrix.dockerfile }}
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
@@ -69,13 +73,17 @@ jobs:
     
     strategy:
       matrix:
-        service: [frontend, backend]
+        include:
+          - service: frontend
+            image: ghcr.io/${{ github.repository }}/mnist-frontend
+          - service: backend
+            image: ghcr.io/${{ github.repository }}/mnist-backend
 
     steps:
       - name: 🔍 Run Trivy vulnerability scanner
         uses: aquasecurity/trivy-action@master
         with:
-          image-ref: ${{ env.REGISTRY }}/${{ env[format('IMAGE_{0}', matrix.service)] }}:${{ github.ref_name }}
+          image-ref: ${{ matrix.image }}:${{ github.ref_name }}
           format: 'sarif'
           output: 'trivy-results-${{ matrix.service }}.sarif'
 
