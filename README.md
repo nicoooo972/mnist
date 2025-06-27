@@ -298,6 +298,131 @@ docker compose up --build              # Build + lancement
 
 ---
 
+## 🤖 CI/CD avec GitHub Actions
+
+### **Pipeline Automatique**
+
+Le workflow `.github/workflows/docker.yml` automatise complètement le processus :
+
+```yaml
+on:
+  push:
+    branches: [ main, develop ]    # Auto-build sur push
+    tags: [ 'v*' ]                # Production sur tags
+  pull_request:
+    branches: [ main ]            # Tests sur PR
+```
+
+### **Stratégie de Déploiement**
+
+#### 🟡 **Staging** (branche `develop`)
+- **Déclencheur** : Push sur `develop`
+- **Images** : `ghcr.io/owner/repo/mnist-{frontend,backend}:develop`
+- **URL** : `http://localhost:8511` (frontend), `http://localhost:8010` (backend)
+
+#### 🟢 **Production** (tags `v*`)
+- **Déclencheur** : Tags de version (ex: `v1.0.0`)
+- **Images** : `ghcr.io/owner/repo/mnist-{frontend,backend}:v1.0.0`
+- **URL** : `http://localhost:8501` (frontend), `http://localhost:8000` (backend)
+- **Release** : Création automatique de GitHub Release
+
+### **Registry d'Images**
+
+Les images sont automatiquement publiées sur **GitHub Container Registry** :
+
+```bash
+# Images disponibles
+docker pull ghcr.io/owner/repo/mnist-frontend:latest
+docker pull ghcr.io/owner/repo/mnist-backend:latest
+docker pull ghcr.io/owner/repo/mnist-frontend:v1.0.0
+docker pull ghcr.io/owner/repo/mnist-backend:v1.0.0
+```
+
+### **Déploiement Manuel**
+
+#### **Script de Déploiement**
+```bash
+# Staging
+./deploy.sh staging develop
+
+# Production  
+./deploy.sh production v1.0.0
+./deploy.sh production latest
+```
+
+#### **Docker Compose Direct**
+```bash
+# Staging
+export GITHUB_REPOSITORY="owner/repo"
+export VERSION="develop"
+docker-compose -f docker-compose.staging.yml up -d
+
+# Production
+export GITHUB_REPOSITORY="owner/repo" 
+export VERSION="v1.0.0"
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### **Sécurité & Monitoring**
+
+#### **Scan de Vulnérabilités**
+- **Trivy** scan automatique des images
+- **SARIF** upload vers GitHub Security
+- **Bloquant** pour les déploiements production
+
+#### **Health Checks**
+```yaml
+healthcheck:
+  test: ["CMD", "curl", "-f", "http://localhost:8000/"]
+  interval: 30s
+  timeout: 10s
+  retries: 3
+```
+
+#### **Utilisateurs Non-Root**
+```dockerfile
+RUN groupadd -r appuser && useradd -r -g appuser appuser
+USER appuser
+```
+
+### **Workflow Complet**
+
+```mermaid
+graph TD
+    A[Push Code] --> B{Branch?}
+    B -->|develop| C[Build Images]
+    B -->|main| D[Build + Test]
+    B -->|v*| E[Build + Prod Deploy]
+    
+    C --> F[Deploy Staging]
+    D --> G[Run Tests]
+    E --> H[Security Scan]
+    
+    F --> I[Staging Available]
+    G --> J[PR Validated]
+    H --> K[Production Deploy]
+    
+    K --> L[GitHub Release]
+    K --> M[Production Available]
+```
+
+### **Variables d'Environnement**
+
+Pour configurer votre déploiement, créez ces secrets GitHub :
+
+```bash
+# GitHub Repository Settings > Secrets
+REGISTRY_USERNAME=your-github-username
+REGISTRY_PASSWORD=your-github-token  # Avec permissions packages:write
+
+# Pour déploiements automatiques (optionnel)
+DEPLOY_SSH_KEY=your-production-ssh-key
+PRODUCTION_HOST=your-server.com
+STAGING_HOST=staging.your-server.com
+```
+
+---
+
 ## 🔍 Points Techniques Avancés
 
 ### **Permutation des Pixels**
