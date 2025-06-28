@@ -1,17 +1,26 @@
-ipython>=8.10
-jupyterlab>=3.0
-kedro-datasets[pandas-csvdataset, pandas-exceldataset, pandas-parquetdataset, plotly-plotlydataset, plotly-jsondataset, matplotlib-matplotlibwriter]>=3.0
-kedro-viz>=6.7.0
-kedro[jupyter]~=0.19.12
-notebook
-scikit-learn~=1.5.1
-seaborn~=0.12.1
-streamlit
-streamlit-drawable-canvas
-requests
+# === MNIST Classifier - Production Requirements ===
+
+# FastAPI Backend
 fastapi
 uvicorn[standard]
 python-multipart
+
+# Streamlit Frontend
+streamlit
+streamlit-drawable-canvas
+
+# Machine Learning
 torch
 torchvision
+
+# Image Processing
 pillow
+numpy
+
+# HTTP Communication
+requests
+
+# === Development Only (comment out for production) ===
+# ipython>=8.10
+# jupyterlab>=3.0
+# notebook
